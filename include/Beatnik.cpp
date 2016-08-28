@@ -15,4 +15,4 @@
 
 #include "beatnik/Beatnik.hpp"
 
-reBass::Beatnik<>;
+template class reBass::Beatnik<>;
