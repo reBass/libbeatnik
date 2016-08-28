@@ -1,0 +1,22 @@
+dist: trusty
+addons:
+  apt:
+    sources:
+      - llvm-toolchain-precise-3.8
+      - ubuntu-toolchain-r-test
+      - kalakris-cmake
+    packages:
+      - clang-3.8
+      - cmake
+      - llvm-3.8-dev
+      - libc++-dev
+      - libc++1
+language: cpp
+compiler: clang
+env: COMPILER="clang++-3.8 -stdlib=libc++"
+script:
+  - mkdir build
+  - cd build
+  - CXX="clang++-3.8 -stdlib=libc++" cmake ..
+  - make
+
