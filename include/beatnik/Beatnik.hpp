@@ -48,29 +48,16 @@ public:
     {
     }
 
-    bool process (gsl::span<short const, fft_step> audio)
-    {
+    bool process(gsl::span<short const, fft_step> audio)
+    noexcept {
         fft.append_short(audio.subspan(0u));
-        auto magnitudes = fft.get_magnitudes();
-        auto sample = onset_detector.process(magnitudes);
+        return process();
+    }
 
-        odf_buffer.push_back(sample);
-        tracker.update_score(sample);
-
-        if (++counter < odf_step) {
-            return false;
-        }
-        counter = 0;
-
-        auto guess = decoder.calculate_period({odf_buffer.linearize()});
-        tracker.set_period_guess(guess);
-
-        if (!tracker.new_estimate_expected()) {
-            return false;
-        }
-        current_period = tracker.estimate_period();
-
-        return true;
+    bool process(gsl::span<float_t const, fft_step> audio)
+    noexcept {
+        fft.append(audio.subspan(0u));
+        return process();
     }
 
     float_t get_current_tempo()
@@ -108,6 +95,27 @@ public:
     }
 
 private:
+    bool process()
+    noexcept {
+        auto magnitudes = fft.get_magnitudes();
+        auto sample = onset_detector.process(magnitudes);
+
+        odf_buffer.push_back(sample);
+        tracker.update_score(sample);
+
+        if (++counter >= odf_step) {
+            counter = 0;
+            auto guess = decoder.calculate_period({odf_buffer.linearize()});
+            tracker.set_period_guess(guess);
+        }
+
+        if (!tracker.new_estimate_expected()) {
+            return false;
+        }
+        current_period = tracker.estimate_period();
+        return true;
+    }
+
     Rolling_FFT<float_t, FFTSize> fft;
     Onset_detector<float_t, FFTSize> onset_detector;
     Ring_array<float_t, ODFSize> odf_buffer;
