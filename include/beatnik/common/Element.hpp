@@ -102,32 +102,5 @@ auto max_result (
         op(*largest1, *largest2),
         std::distance(first1, largest1)
     );
-
-    /*
-    auto first = boost::make_zip_iterator(
-        boost::make_tuple(
-            first1,
-            first2
-        )
-    );
-    auto last = boost::make_zip_iterator(
-        boost::make_tuple(
-            last1,
-            first2 + std::distance(first1, last1)
-        )
-    );
-    auto m = std::max_element(
-        first,
-        last,
-        [&op] (auto const& a, auto const& b) {
-            return op(boost::get<0>(a), boost::get<1>(a))
-                   < op(boost::get<0>(b), boost::get<1>(b));
-        }
-    );
-    return Element<ElementType>(
-        op(boost::get<0>(*m), boost::get<1>(*m)),
-        std::distance(first, m)
-    );
-     */
 };
 }
