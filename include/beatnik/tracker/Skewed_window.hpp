@@ -30,7 +30,7 @@ public:
         unsigned period,
         InputIt rfirst,
         InputIt rlast
-    ) const {
+    ) const noexcept {
         unsigned d = abs_distance(rfirst, rlast);
         d = std::min(max_lag_for(MaxPeriod), d);
         auto result = max_result(
@@ -74,7 +74,7 @@ private:
     };
 
     static constexpr T TIGHTNESS = 5;
-    std::array<std::array<T, 8 * MaxPeriod>, MaxPeriod / 2> cache;
+    std::array<std::array<T, 2 * MaxPeriod>, MaxPeriod / 2> cache;
 };
 
 }
