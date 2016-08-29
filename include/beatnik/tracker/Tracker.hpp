@@ -109,7 +109,7 @@ public:
 private:
     constexpr bool is_valid_period (std::size_t period)
     noexcept {
-        return period >= MaxPeriod / 2
+        return period > MaxPeriod / 2
                && period <= MaxPeriod;
     }
 
