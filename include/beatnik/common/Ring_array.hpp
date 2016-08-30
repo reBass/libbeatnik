@@ -24,6 +24,8 @@
 #include <type_traits>
 #include <utility>
 
+#include <gsl/span>
+
 #include "Index_iterator.hpp"
 
 namespace reBass {
@@ -229,11 +231,15 @@ namespace reBass {
         }
 
         template <typename InputIterator>
-        constexpr void insert_at_end(InputIterator first, InputIterator last) {
+        constexpr void append(InputIterator first, InputIterator last) {
             assert(std::distance(first, last) >= 0);
             while (first != last) {
                 push_back(*(first++));
             }
+        }
+
+        constexpr void append(gsl::span<T const> data) {
+            append(std::cbegin(data), std::cend(data));
         }
 
     private:

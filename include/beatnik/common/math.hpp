@@ -34,16 +34,9 @@ namespace math
 template<typename T> constexpr T PI = T(3.141592653589793238462643L);
 
 template <typename T>
-T abs_difference (const T a, const T b) noexcept {
-    return (a > b) ? (a - b) : (b - a);
-}
-
-template <typename I>
-static constexpr unsigned abs_distance (I first, I last)
+T abs_difference (const T a, const T b)
 noexcept {
-    auto d = std::distance(first, last);
-    assert(d >= 0);
-    return static_cast<unsigned>(d);
+    return (a > b) ? (a - b) : (b - a);
 }
 
 template <typename T>
@@ -64,46 +57,13 @@ noexcept {
     return std::accumulate(first, last, 0) / std::distance(first, last);
 };
 
-template <typename T>
-void adaptive_threshold(
-    gsl::span<T const> in,
-    gsl::span<T> out,
-    const unsigned radius
-) noexcept {
-    T moving_sum = 0;
-
-    const auto in_first = std::cbegin(in);
-    const auto in_last = std::cend(in);
-    auto moving_back = in_first;
-    auto moving_center = in_first;
-    auto moving_front = in_first;
-
-    auto out_it = std::begin(out);
-
-    do {
-        if (std::distance(moving_back, moving_center) > radius) {
-            moving_sum -= *(moving_back++);
-        }
-        if (abs_distance(in_first, moving_front) >= radius) {
-            *(out_it++) = std::fdim(
-                *(moving_center++),
-                moving_sum / std::distance(moving_back, moving_front)
-            );
-        }
-        if (std::distance(moving_front, in_last) > 0) {
-            moving_sum += *(moving_front++);
-        }
-    } while (moving_center != in_last);
-}
-
 template <typename T, std::ptrdiff_t N>
-void adaptive_threshold2(
-        gsl::span<T const, N> in,
-        gsl::span<T, N> out,
-        const std::ptrdiff_t radius
+void adaptive_threshold(
+    gsl::span<T const, N> in,
+    gsl::span<T, N> out,
+    gsl::span<T, N> thresh,
+    std::ptrdiff_t radius
 ) noexcept {
-    std::array<T, N> thresh;
-
     for (std::ptrdiff_t i = 0; i < N; ++i) {
         auto offset = std::max(i - radius, std::ptrdiff_t{0});
         auto count = std::min(N - offset, 2*radius);
@@ -112,14 +72,30 @@ void adaptive_threshold2(
     }
 
     std::transform(
-            std::cbegin(in),
-            std::cend(in),
-            std::cbegin(thresh),
-            std::begin(out),
-            [] (auto value, auto threshold) {
-                return std::fdim(value, threshold);
-            }
+        std::cbegin(in),
+        std::cend(in),
+        std::cbegin(thresh),
+        std::begin(out),
+        [] (auto value, auto threshold) {
+            return std::fdim(value, threshold);
+        }
     );
+}
+
+template <typename T, std::ptrdiff_t N>
+void adaptive_threshold(gsl::span<T, N> data, std::ptrdiff_t radius)
+noexcept {
+    std::array<T, N> thresh;
+    adaptive_threshold<T, N>(data, data, thresh, radius);
+}
+
+template <typename T, std::ptrdiff_t N>
+void adaptive_threshold(
+    gsl::span<T const, N> in,
+    gsl::span<T, N> out,
+    std::ptrdiff_t radius
+) noexcept {
+    adaptive_threshold<T, N>(in, out, out, radius);
 }
 
 template <typename T>
@@ -143,6 +119,12 @@ noexcept {
             return v / sum;
         }
     );
+}
+
+template <typename T>
+void normalize(gsl::span<T> data)
+noexcept {
+    normalize<T>(data, data);
 }
 
 template <typename T>

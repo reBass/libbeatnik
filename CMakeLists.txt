@@ -21,13 +21,12 @@ set(SRC
         ${SRC_DIR}/beatnik/common/Ring_array.hpp
         ${SRC_DIR}/beatnik/common/Pair_iterator.hpp
 
+        ${SRC_DIR}/beatnik/fft/ACF.hpp
         ${SRC_DIR}/beatnik/fft/FFT.hpp
+        ${SRC_DIR}/beatnik/fft/Real_FFT.hpp
         ${SRC_DIR}/beatnik/fft/Hann_window.hpp
-        ${SRC_DIR}/beatnik/fft/Rolling_FFT.hpp
 
-        ${SRC_DIR}/beatnik/odf/Balanced_ACF.hpp
         ${SRC_DIR}/beatnik/odf/Onset_detector.hpp
-        ${SRC_DIR}/beatnik/odf/RCF_processor.hpp
 
         ${SRC_DIR}/beatnik/decoder/Decoder.hpp
         ${SRC_DIR}/beatnik/decoder/Transition_window.hpp
@@ -43,7 +42,7 @@ set(SRC
 add_library(${PROJECT_NAME} STATIC ${SRC})
 
 find_package(Benchmark REQUIRED)
-add_executable(libbeatnik_bench ${PROJECT_SOURCE_DIR}/benchmark.cpp)
+add_executable(libbeatnik_bench ${PROJECT_SOURCE_DIR}/autocorrelation.cpp)
 target_link_libraries(libbeatnik_bench ${PROJECT_NAME})
 target_link_libraries(libbeatnik_bench ${benchmark_LIBRARIES})
 set_target_properties(${PROJECT_NAME} PROPERTIES LINKER_LANGUAGE CXX)

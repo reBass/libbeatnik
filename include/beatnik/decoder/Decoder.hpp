@@ -21,10 +21,9 @@
 #include <functional>
 #include <gsl/span>
 
+#include "../common/math.hpp"
 #include "../common/Ring_array.hpp"
-#include "../odf/Balanced_ACF.hpp"
-#include "../odf/RCF_processor.hpp"
-#include "../tracker/Tracker.hpp"
+#include "../fft/ACF.hpp"
 #include "Viterbi.hpp"
 
 namespace reBass {
@@ -36,22 +35,41 @@ template <
 class Decoder
 {
 public:
-    unsigned calculate_period (gsl::span<T const, WindowSize> odf)
+    static constexpr unsigned window_size = WindowSize;
+
+    unsigned calculate_period(gsl::span<T const, window_size> input)
     noexcept {
-        rcf_processor.transform(odf, {rcf_row});
-        auto period_offset = viterbi.decode({rcf_row});
+        math::adaptive_threshold<T, window_size>(
+            input,
+            odf_frame,
+            threshold_range
+        );
+        acf.compute(odf_frame, odf_frame);
+        math::comb_filter<T>(odf_frame, combed_frame);
+        math::adaptive_threshold<T, combed_size>(combed_frame, threshold_range);
+
+        // a periodicity at T implies a periodicity at 2*T,
+        // therefore the lower half of the output is redundant
+        auto const viterbi_input = gsl::span<T, viterbi_size>(
+            combed_frame.data() + viterbi_offset,
+            viterbi_size
+        );
+        auto const period_offset = viterbi.decode(viterbi_input);
 
         return period_offset + min_period;
     }
 private:
-    static constexpr unsigned decimated_size = WindowSize / DecimationFactor;
-    static constexpr unsigned row_size = decimated_size / 2;
-    static constexpr unsigned max_period = decimated_size;
-    static constexpr unsigned min_period = max_period - row_size;
+    static constexpr unsigned combed_size = WindowSize / DecimationFactor;
+    static constexpr unsigned viterbi_size = combed_size / 2;
+    static constexpr unsigned viterbi_offset = combed_size - viterbi_size;
+    static constexpr unsigned max_period = combed_size;
+    static constexpr unsigned min_period = max_period - viterbi_size;
+    static constexpr unsigned threshold_range = 8;
 
-    std::array<T, row_size> rcf_row;
+    std::array<T, window_size> odf_frame;
+    std::array<T, combed_size> combed_frame;
 
-    RCF_processor <T, WindowSize, DecimationFactor> rcf_processor;
-    Viterbi<T, row_size> viterbi;
+    ACF<T, window_size> acf;
+    Viterbi<T, viterbi_size> viterbi;
 };
 }
