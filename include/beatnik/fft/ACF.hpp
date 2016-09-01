@@ -8,10 +8,19 @@
 #include "Real_FFT.hpp"
 
 namespace reBass {
-template <typename T, unsigned N>
-class ACF final {
+template <typename T, int N>
+/// Computes autocorrelation function of a given input
+class ACF
+{
 public:
-    void compute (gsl::span<T const, N> input, gsl::span<T, N> output)
+    void
+    compute(gsl::span<T, N> data)
+    noexcept {
+        compute(data, data);
+    }
+
+    void
+    compute (gsl::span<T const, N> input, gsl::span<T, N> output)
     noexcept {
         std::fill(
             std::end(time_domain) - N,
@@ -24,7 +33,7 @@ public:
             std::begin(time_domain)
         );
 
-        fft.transform_forward({time_domain}, {frequency_domain});
+        fft.transform_forward(time_domain, frequency_domain);
 
         std::transform(
             std::cbegin(frequency_domain),
@@ -35,7 +44,7 @@ public:
             }
         );
 
-        fft.transform_backward({frequency_domain}, {time_domain});
+        fft.transform_backward(frequency_domain, time_domain);
 
         auto lag = N;
         std::transform(
@@ -46,7 +55,7 @@ public:
                 return std::abs(value) / (N * lag--);
             }
         );
-    };
+    }
 
 private:
     const Real_FFT<T, 2*N> fft;

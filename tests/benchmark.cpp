@@ -15,14 +15,13 @@
 
 #include <array>
 #include <complex>
-#include <beatnik/common/math.hpp>
 
-#include <beatnik/common/Ring_array.hpp>
+#include <beatnik/common/math.hpp>
 #include <beatnik/decoder/Decoder.hpp>
 #include <beatnik/fft/FFT.hpp>
-#include <beatnik/odf/Onset_detector.hpp>
 
 #include <benchmark/benchmark.h>
+#include "kiss_fft/kiss_fftr.h"
 
 using namespace reBass;
 
@@ -32,10 +31,10 @@ static void BM_FFT_float_512real(benchmark::State& state) {
     input[1] = 1;
 
     std::array<std::complex<float>, 257> output;
-    FFT<float, 256> fft;
+    Real_FFT<float, 512> fft;
 
     while (state.KeepRunning()) {
-        fft.transform_real({input}, {output});
+        fft.transform_forward({input}, {output});
     }
 }
 BENCHMARK(BM_FFT_float_512real);
@@ -49,22 +48,65 @@ static void BM_FFT_float_512cpx(benchmark::State& state) {
     FFT<float, 512> fft;
 
     while (state.KeepRunning()) {
-        fft.transform({input}, {output});
+        fft.transform_forward(input, output);
+        fft.transform_backward(output, input);
+        input[1] = 1;
     }
 }
 BENCHMARK(BM_FFT_float_512cpx);
 
-static void BM_ODF_float_256(benchmark::State& state) {
-    std::array<float, 256> input;
-    input.fill(1);
+static void BM_Kiss_FFT_float_512cpx(benchmark::State& state) {
+    std::array<std::complex<float>, 512> input;
+    input.fill(0);
+    input[1] = 1;
 
-    Onset_detector<float, 256> odf;
+    std::array<std::complex<float>, 512> output;
+    auto plan = kiss_fft_alloc(512, false, nullptr, nullptr);
+    auto inv_plan = kiss_fft_alloc(512, true, nullptr, nullptr);
 
     while (state.KeepRunning()) {
-        input[0] = odf.process({input});
+        kiss_fft(
+            plan,
+            reinterpret_cast<kiss_fft_cpx const*>(input.data()),
+            reinterpret_cast<kiss_fft_cpx*>(output.data())
+        );
+        kiss_fft(
+            inv_plan,
+            reinterpret_cast<kiss_fft_cpx const*>(output.data()),
+            reinterpret_cast<kiss_fft_cpx*>(input.data())
+        );
+        input[1] = 1;
     }
 }
-BENCHMARK(BM_ODF_float_256);
+BENCHMARK(BM_Kiss_FFT_float_512cpx);
+
+static void BM_Adaptive_Threshold(benchmark::State& state) {
+    std::array<float, 512> input;
+
+    while(state.KeepRunning()) {
+        math::adaptive_threshold(
+            gsl::span<float const, 512>(input),
+            gsl::span<float, 512>(input),
+            7
+        );
+    }
+}
+BENCHMARK(BM_Adaptive_Threshold);
+
+static void BM_Threshold_Reference(benchmark::State& state) {
+    std::array<float, 512> input;
+    std::array<float, 512> thresh;
+
+    while(state.KeepRunning()) {
+        math::threshold_reference(
+            gsl::span<float const, 512>(input),
+            gsl::span<float, 512>(input),
+            gsl::span<float, 512>(thresh),
+            7
+        );
+    }
+}
+BENCHMARK(BM_Threshold_Reference);
 
 /*
 static void BM_Decoder(benchmark::State& state) {
@@ -105,8 +147,8 @@ static void BM_Comb_filter(benchmark::State& state) {
     input.fill(1);
     while (state.KeepRunning()) {
         math::comb_filter(
-            gsl::span<float const>{input},
-            gsl::span<float>{output}
+            gsl::span<float const, 512>{input},
+            gsl::span<float, 128>{output}
         );
     }
 }

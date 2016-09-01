@@ -23,13 +23,12 @@ set(SRC
 
         ${SRC_DIR}/beatnik/fft/ACF.hpp
         ${SRC_DIR}/beatnik/fft/FFT.hpp
-        ${SRC_DIR}/beatnik/fft/Real_FFT.hpp
         ${SRC_DIR}/beatnik/fft/Hann_window.hpp
+        ${SRC_DIR}/beatnik/fft/Real_FFT.hpp
 
         ${SRC_DIR}/beatnik/odf/Onset_detector.hpp
 
         ${SRC_DIR}/beatnik/decoder/Decoder.hpp
-        ${SRC_DIR}/beatnik/decoder/Transition_window.hpp
         ${SRC_DIR}/beatnik/decoder/Viterbi.hpp
 
         ${SRC_DIR}/beatnik/tracker/Skewed_window.hpp
@@ -37,12 +36,16 @@ set(SRC
 
         ${SRC_DIR}/beatnik/Beatnik.hpp
 
-        ${SRC_DIR}/Beatnik.cpp
+        ${PROJECT_SOURCE_DIR}/Beatnik.cpp
 )
 add_library(${PROJECT_NAME} STATIC ${SRC})
 
 find_package(Benchmark REQUIRED)
-add_executable(libbeatnik_bench ${PROJECT_SOURCE_DIR}/autocorrelation.cpp)
+add_executable(libbeatnik_bench
+        ${PROJECT_SOURCE_DIR}/tests/benchmark.cpp
+        ${PROJECT_SOURCE_DIR}/tests/kiss_fft/kiss_fft.c
+        ${PROJECT_SOURCE_DIR}/tests/kiss_fft/kiss_fftr.c
+)
 target_link_libraries(libbeatnik_bench ${PROJECT_NAME})
 target_link_libraries(libbeatnik_bench ${benchmark_LIBRARIES})
 set_target_properties(${PROJECT_NAME} PROPERTIES LINKER_LANGUAGE CXX)

@@ -28,11 +28,11 @@
 #include "Skewed_window.hpp"
 
 namespace reBass {
-template <typename T, unsigned MaxPeriod, unsigned BeatsCount = 8>
+template <typename T, int MaxPeriod, int BeatsCount = 8>
 class Tracker
 {
 public:
-    void set_period_guess(unsigned period)
+    void set_period_guess(int period)
     noexcept {
         assert(is_valid_period(period));
         period_guess = period;
@@ -69,10 +69,13 @@ public:
     noexcept {
         counter = 0;
 
-        auto last_beat = cumulative_score.size() - Element<T>::max(
-            std::crbegin(cumulative_score),
-            std::crbegin(cumulative_score) + period_guess
-        ).index - 1;
+        auto max_index = static_cast<int>(
+            Element<T>::max(
+                std::crbegin(cumulative_score),
+                std::crbegin(cumulative_score) + period_guess
+            ).index
+        );
+        auto last_beat = N - max_index - 1;
 
         T periods_sum = 0;
         T periods_count = 0;
@@ -104,18 +107,20 @@ public:
     }
 
 private:
-    static constexpr bool is_valid_period (std::size_t period)
+    static constexpr bool
+    is_valid_period (int period)
     noexcept {
         return period > MaxPeriod / 2
                && period <= MaxPeriod;
     }
 
     static constexpr float ALPHA = 0.9f;
+    static constexpr int N = MaxPeriod * BeatsCount;
 
-    unsigned period_guess;
-    unsigned counter;
-    Ring_array<T, BeatsCount * MaxPeriod> cumulative_score;
-    Ring_array<unsigned, BeatsCount * MaxPeriod> backlink;
+    int period_guess;
+    int counter;
+    Ring_array<T, N> cumulative_score;
+    Ring_array<int, N> backlink;
     Skewed_window<T, MaxPeriod> window;
 };
 }

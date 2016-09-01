@@ -27,26 +27,29 @@
 #include "Viterbi.hpp"
 
 namespace reBass {
-template <
-    typename T = float,
-    unsigned WindowSize = 512,
-    unsigned DecimationFactor = 4
->
+template <typename T = float, int WindowSize = 512, int DecimationFactor = 4>
 class Decoder
 {
 public:
-    static constexpr unsigned window_size = WindowSize;
+    static constexpr int window_size = WindowSize;
 
-    unsigned calculate_period(gsl::span<T const, window_size> input)
+    int
+    calculate_period(gsl::span<T const, window_size> input)
     noexcept {
-        math::adaptive_threshold<T, window_size>(
+        math::adaptive_threshold(
             input,
-            odf_frame,
+            gsl::span<T, window_size>(odf_frame),
             threshold_range
         );
-        acf.compute(odf_frame, odf_frame);
-        math::comb_filter<T>(odf_frame, combed_frame);
-        math::adaptive_threshold<T, combed_size>(combed_frame, threshold_range);
+        acf.compute(odf_frame);
+        math::comb_filter(
+            gsl::span<T const, window_size>(odf_frame),
+            gsl::span<T, combed_size>(combed_frame)
+        );
+        math::adaptive_threshold(
+            gsl::span<T, combed_size>(combed_frame),
+            threshold_range
+        );
 
         // a periodicity at T implies a periodicity at 2*T,
         // therefore the lower half of the output is redundant
@@ -59,12 +62,12 @@ public:
         return period_offset + min_period;
     }
 private:
-    static constexpr unsigned combed_size = WindowSize / DecimationFactor;
-    static constexpr unsigned viterbi_size = combed_size / 2;
-    static constexpr unsigned viterbi_offset = combed_size - viterbi_size;
-    static constexpr unsigned max_period = combed_size;
-    static constexpr unsigned min_period = max_period - viterbi_size;
-    static constexpr unsigned threshold_range = 8;
+    static constexpr int combed_size = WindowSize / DecimationFactor;
+    static constexpr int viterbi_size = combed_size / 2;
+    static constexpr int viterbi_offset = combed_size - viterbi_size;
+    static constexpr int max_period = combed_size;
+    static constexpr int min_period = max_period - viterbi_size;
+    static constexpr int threshold_range = 7;
 
     std::array<T, window_size> odf_frame;
     std::array<T, combed_size> combed_frame;

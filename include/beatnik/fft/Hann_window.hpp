@@ -20,20 +20,23 @@
 #include <algorithm>
 #include <array>
 #include <iterator>
+#include <functional>
 
 #include "../common/math.hpp"
 
 namespace reBass
 {
-template<typename T, std::size_t N>
+template<typename T, int N>
 class Hann_window {
 public:
-    Hann_window() {
+    Hann_window()
+    noexcept {
         encache();
-    };
+    }
 
     template <class InputIt, class OutputIt>
-    void cut(InputIt in, OutputIt out)
+    void
+    cut(InputIt in, OutputIt out)
     const noexcept {
         std::transform(
             std::cbegin(cache),
@@ -44,26 +47,28 @@ public:
         );
     }
 
-    static constexpr T norm_correction() {
-        return static_cast<T>(0.5);
+    static constexpr T
+    norm_correction() {
+        return 0.5f;
     }
-private:
-    std::array<T, N> cache;
 
-    void encache()
+private:
+    void
+    encache()
     noexcept {
         for (auto i = 0u; i < cache.size(); ++i) {
-            cache[i] = window_function(i, cache.size());
+            cache[i] = window_function(i);
         }
     }
 
-    static constexpr T window_function(
-        std::size_t position,
-        std::size_t window_size
-    ) noexcept {
-        auto relative_position = static_cast<T>(position) / window_size;
+    static constexpr T
+    window_function(int position)
+    noexcept {
+        auto relative_position = static_cast<T>(position) / N;
         return (1 - std::cos(relative_position * 2 * math::PI<T>)) / 2;
     }
+
+    std::array<T, N> cache;
 };
 
 }

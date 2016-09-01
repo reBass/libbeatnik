@@ -28,15 +28,19 @@
 #include "../fft/Real_FFT.hpp"
 
 namespace reBass {
-template <typename T, unsigned N>
-class Onset_detector final
+template <typename T, int N>
+class Onset_detector
 {
 public:
-    static constexpr unsigned fft_window_size = N;
-    static constexpr unsigned fft_output_size = N/2 + 1;
-    static constexpr unsigned magnitudes_size = N/2;
+    static constexpr int fft_window_size = N;
+    static constexpr int fft_output_size = N/2 + 1;
+    static constexpr int magnitudes_size = N/2;
 
-    T process(gsl::span<T const> input)
+    /// Appends chunk of incomming audio to an internal buffer and assings it
+    /// a scalar value representing the likelihood of an onset
+    template <std::ptrdiff_t N_in>
+    T
+    process(gsl::span<T const, N_in> input)
     noexcept {
         input_buffer.append(input);
         compute_fft();
@@ -44,18 +48,21 @@ public:
         return estimate_power_rise();
     }
 
-    gsl::span<std::complex<T> const, fft_output_size> get_fft_output()
+    gsl::span<std::complex<T> const, fft_output_size>
+    get_fft_output()
     const noexcept {
         return output;
     }
 
-    gsl::span<T const, magnitudes_size> get_magnitudes()
+    gsl::span<T const, magnitudes_size>
+    get_magnitudes()
     const noexcept {
         return magnitudes;
     }
 
 private:
-    void append_short(gsl::span<short const> input)
+    void
+    append_short(gsl::span<short const> input)
     noexcept {
         std::transform(
             std::cbegin(input),
@@ -69,13 +76,15 @@ private:
         );
     }
 
-    void compute_fft()
+    void
+    compute_fft()
     noexcept {
         window.cut(input_buffer.cend() - N, windowed_buffer.begin());
         fft.transform_forward(windowed_buffer, output);
     }
 
-    void compute_magnitudes()
+    void
+    compute_magnitudes()
     noexcept {
         std::transform(
             std::cbegin(output),
@@ -87,11 +96,12 @@ private:
         );
     }
 
-    T estimate_power_rise()
+    T
+    estimate_power_rise()
     noexcept {
         auto result = 0.000001f;
         for (auto i = 0u; i < magnitudes_size; ++i) {
-            if (magnitudes[i] > previous_magnitudes[i] * min_rise) {
+            if (magnitudes[i] > previous_magnitudes[i] * 2) {
                 ++result;
             }
             previous_magnitudes[i] = magnitudes[i];
@@ -99,11 +109,10 @@ private:
         return result / magnitudes_size;
     }
 
-    constexpr T norm_factor() {
+    constexpr T
+    norm_factor() {
         return T{1} / (N * window.norm_correction());
     }
-
-    static constexpr T min_rise = 2;
 
     const Real_FFT<T, fft_window_size> fft;
     const Hann_window<T, fft_window_size> window;
@@ -114,5 +123,4 @@ private:
     std::array<T, magnitudes_size> previous_magnitudes;
     std::array<T, magnitudes_size> magnitudes;
 };
-
 }

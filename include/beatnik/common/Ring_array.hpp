@@ -238,7 +238,8 @@ namespace reBass {
             }
         }
 
-        constexpr void append(gsl::span<T const> data) {
+        template <std::ptrdiff_t N>
+        constexpr void append(gsl::span<T const, N> data) {
             append(std::cbegin(data), std::cend(data));
         }
 

@@ -22,7 +22,7 @@
 #include "FFT.hpp"
 
 namespace reBass {
-template <typename T, unsigned N>
+template <typename T, int N>
 class Real_FFT {
     using real_t = T;
     using cpx_t = std::complex<T>;
@@ -36,30 +36,37 @@ public:
         }
     }
 
-    void transform_forward(
+    void
+    transform_forward(
         gsl::span<real_t const, N> input,
         gsl::span<cpx_t, N/2 + 1> output
     ) const noexcept {
         auto cpx_in = gsl::span<cpx_t const, N/2>(
             reinterpret_cast<cpx_t const*>(input.data()), N/2
         );
-        fft.transform_forward(cpx_in, gsl::span<cpx_t, N/2>(output.data(), N/2));
+        auto out = gsl::span<cpx_t, N/2>(output.data(), N/2);
+
+        fft.transform_forward(cpx_in, out);
         real_to_cpx(output, false);
     }
 
-    void transform_backward(
+    void
+    transform_backward(
         gsl::span<cpx_t, N/2 + 1> input,
         gsl::span<real_t, N> output
     ) const noexcept {
         real_to_cpx(input, true);
+        auto const_in = gsl::span<cpx_t const, N/2>(input.data(), N/2);
         auto cpx_out = gsl::span<cpx_t, N/2>(
             reinterpret_cast<cpx_t *>(output.data()), N/2
         );
-        fft.transform_backward(gsl::span<cpx_t const, N/2>(input.data(), N/2), cpx_out);
+
+        fft.transform_backward(const_in, cpx_out);
     }
 
 private:
-    void real_to_cpx(gsl::span<cpx_t, N/2 + 1> data, bool inverse)
+    void
+    real_to_cpx(gsl::span<cpx_t, N/2 + 1> data, bool inverse)
     const noexcept {
         auto const n = N >> 1;
 
@@ -75,17 +82,21 @@ private:
 
         for (auto i = 1u; 2*i <= n; ++i) {
             auto const w =  data[i] + std::conj(data[n - i]);
-            auto const z = (data[i] - std::conj(data[n - i])) * twiddles[inverse ? N/2 - i : i];
+            auto const z = (data[i] - std::conj(data[n - i]))
+                           * twiddles[inverse ? N/2 - i : i];
 
             data[i] = (inverse ? 1 : 0.5f) * (w + z);
             data[n - i] = (inverse ? 1 : 0.5f) * (std::conj(w - z));
         }
     }
 
-    static constexpr real_t re(cpx_t c) {
+    static constexpr real_t
+    re(cpx_t c) {
         return std::real(c);
     }
-    static constexpr real_t im(cpx_t c) {
+
+    static constexpr real_t
+    im(cpx_t c) {
         return std::imag(c);
     }
 

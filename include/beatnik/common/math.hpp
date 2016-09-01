@@ -39,8 +39,9 @@ noexcept {
     return (a > b) ? (a - b) : (b - a);
 }
 
-template <typename T>
-T mean(gsl::span<T const> input)
+template <typename T, std::ptrdiff_t N>
+T
+mean(gsl::span<T const, N> input)
 noexcept {
     assert(std::size(input) > 0);
     return std::accumulate(
@@ -50,23 +51,27 @@ noexcept {
     ) / std::size(input);
 }
 
-template <typename I>
-auto mean(I first, I last)
-noexcept {
-    assert(std::distance(first, last) > 0);
-    return std::accumulate(first, last, 0) / std::distance(first, last);
-};
-
-template <typename T, std::ptrdiff_t N>
-void adaptive_threshold(
-    gsl::span<T const, N> in,
-    gsl::span<T, N> out,
-    gsl::span<T, N> thresh,
+template <
+    typename T,
+    std::ptrdiff_t N_in,
+    std::ptrdiff_t N_out,
+    std::ptrdiff_t N_thresh
+>
+void threshold_reference(
+    gsl::span<T const, N_in> in,
+    gsl::span<T, N_out> out,
+    gsl::span<T, N_thresh> thresh,
     std::ptrdiff_t radius
 ) noexcept {
-    for (std::ptrdiff_t i = 0; i < N; ++i) {
+    assert(
+        std::size(in) == std::size(out)
+        && std::size(out) == std::size(thresh)
+    );
+    auto const n = std::size(in);
+
+    for (std::ptrdiff_t i = 0; i < n; ++i) {
         auto offset = std::max(i - radius, std::ptrdiff_t{0});
-        auto count = std::min(N - offset, 2*radius);
+        auto count = std::min(n - offset, 2*radius);
         count = std::min(count, i + radius);
         thresh[i] = mean(in.subspan(offset, count));
     }
@@ -82,25 +87,47 @@ void adaptive_threshold(
     );
 }
 
-template <typename T, std::ptrdiff_t N>
-void adaptive_threshold(gsl::span<T, N> data, std::ptrdiff_t radius)
-noexcept {
-    std::array<T, N> thresh;
-    adaptive_threshold<T, N>(data, data, thresh, radius);
-}
-
-template <typename T, std::ptrdiff_t N>
-void adaptive_threshold(
-    gsl::span<T const, N> in,
-    gsl::span<T, N> out,
+template <typename T, std::ptrdiff_t N_in, std::ptrdiff_t N_out>
+void
+adaptive_threshold(
+    gsl::span<T const, N_in> in,
+    gsl::span<T, N_out> out,
     std::ptrdiff_t radius
 ) noexcept {
-    adaptive_threshold<T, N>(in, out, out, radius);
+    assert(std::size(in) == std::size(out));
+    auto const n = std::size(in);
+
+    assert(n >= 2*radius);
+    T sum = 0;
+    std::ptrdiff_t count = 0;
+
+    for (auto i = 0; i < n + radius; ++i) {
+        if (i < n) {
+            sum += in[i];
+            ++count;
+        }
+        if (i >= radius) {
+            out[i - radius] = std::fdim(in[i - radius], sum / count);
+            if (i > 2*radius) {
+                sum -= in[i - 2*radius];
+                --count;
+            }
+        }
+    }
 }
 
-template <typename T>
-void normalize(gsl::span<T const> in, gsl::span<T> out)
+template <typename T, std::ptrdiff_t N>
+void
+adaptive_threshold(gsl::span<T, N> data, std::ptrdiff_t radius)
 noexcept {
+    adaptive_threshold<T, N>(data, data, radius);
+}
+
+template <typename T, std::ptrdiff_t N_in, std::ptrdiff_t N_out>
+void
+normalize(gsl::span<T const, N_in> in, gsl::span<T, N_out> out)
+noexcept {
+    assert(std::size(in) == std::size(out));
     auto sum = std::accumulate(
         std::cbegin(in),
         std::cend(in),
@@ -121,26 +148,34 @@ noexcept {
     );
 }
 
-template <typename T>
-void normalize(gsl::span<T> data)
+template <typename T, std::ptrdiff_t N>
+void
+normalize(gsl::span<T, N> data)
 noexcept {
-    normalize<T>(data, data);
+    normalize(gsl::span<T const, N>(data), data);
 }
 
-template <typename T>
-void comb_filter(gsl::span<T const> in, gsl::span<T> out)
+template <
+    typename T,
+    std::ptrdiff_t N_in,
+    std::ptrdiff_t N_out,
+    std::ptrdiff_t N_new = (N_in > N_out) ? N_in - N_out : 0,
+    std::ptrdiff_t Stage = N_in / N_out
+>
+void
+comb_filter(gsl::span<T const, N_in> in, gsl::span<T, N_out> out)
 noexcept {
-    assert(in.size() % out.size() == 0);
-    auto stage = in.size() / out.size();
+    static_assert(N_in >= 0 && N_out >= 0);
+    static_assert(N_in % N_out == 0);
 
-    if (stage > 1) {
-        comb_filter(in.subspan(0, (stage - 1) * out.size()), out);
+    if (Stage > 1) {
+        comb_filter(gsl::span<T const, N_new>(in.data(), N_new), out);
     } else {
         std::fill(std::begin(out), std::end(out), 0);
     }
 
-    for (auto i = 1; i < out.size(); ++i) {
-        out[i] += mean(in.subspan(stage * (i - 1) + 1, 2*stage - 1));
+    for (auto i = 1; i < N_out; ++i) {
+        out[i] += mean(in.subspan(Stage * (i - 1) + 1, 2*Stage - 1));
     }
 }
 

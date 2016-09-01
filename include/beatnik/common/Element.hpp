@@ -30,24 +30,24 @@ struct Element
     T value;
     std::size_t index;
 
-    Element ()
+    Element()
     {
     }
 
     template <typename InputIt>
-    Element (InputIt first, InputIt element) :
+    Element(InputIt first, InputIt element) :
         value(*element),
         index(static_cast<std::size_t>(std::distance(first, element)))
     {
     }
 
-    Element (T& value, std::size_t index) :
+    Element(T& value, std::size_t index) :
         value(value),
         index(index)
     {
     }
 
-    Element (T&& value, std::size_t index) :
+    Element(T&& value, std::size_t index) :
         value(value),
         index(index)
     {
@@ -55,7 +55,7 @@ struct Element
 
     template <typename InputIt>
     static Element<T>
-    max (InputIt first, InputIt last)
+    max(InputIt first, InputIt last)
     {
         auto m = std::max_element(
             first,
@@ -71,13 +71,12 @@ template <
     typename BinaryOp,
     typename ElementType = typename BinaryOp::result_type
 >
-auto max_result (
+auto max_result(
     InputIt1 first1,
     InputIt1 last1,
     InputIt2 first2,
     BinaryOp op
-)
-{
+) noexcept {
     if (first1 == last1) {
         return Element<ElementType>(static_cast<ElementType>(0), size_t{0});
     }

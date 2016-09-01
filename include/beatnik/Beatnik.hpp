@@ -24,22 +24,22 @@
 namespace reBass {
 template <
     typename T = float,
-    unsigned FFTSize = 1024,
-    unsigned FFTStep = 128,
-    unsigned ODFSize = 2048,
-    unsigned ODFStep = 128
+    int FFTSize = 1024,
+    int FFTStep = 128,
+    int ODFSize = 2048,
+    int ODFStep = 128
 >
 class Beatnik {
 public:
     using float_t = T;
-    static constexpr unsigned fft_window_size = FFTSize;
-    static constexpr unsigned fft_magnitudes_size = fft_window_size / 2;
-    static constexpr unsigned fft_step = FFTStep;
-    static constexpr unsigned odf_size = ODFSize;
-    static constexpr unsigned odf_step = ODFStep;
-    static constexpr unsigned decimate_by = 4;
-    static constexpr unsigned max_period = odf_size / decimate_by;
-    static constexpr unsigned max_beats = 16 * 512 / ODFSize;
+    static constexpr int fft_window_size = FFTSize;
+    static constexpr int fft_magnitudes_size = fft_window_size / 2;
+    static constexpr int fft_step = FFTStep;
+    static constexpr int odf_size = ODFSize;
+    static constexpr int odf_step = ODFStep;
+    static constexpr int decimate_by = 4;
+    static constexpr int max_period = odf_size / decimate_by;
+    static constexpr int max_beats = 16 * 512 / ODFSize;
     static constexpr float_t min_tempo = 90.f;
     static constexpr float_t max_tempo = 2*min_tempo;
 
@@ -49,22 +49,24 @@ public:
     {
     }
 
-    bool process(gsl::span<float_t const, fft_step> audio)
+    bool
+    process(gsl::span<float_t const, fft_step> audio)
     noexcept {
-        float_t sample = onset_detector.process(audio.subspan(0u));
+        float_t sample = onset_detector.process(audio);
         odf_buffer.push_back(sample);
         tracker.update_score(sample);
 
         if (++counter >= odf_step) {
             counter = 0;
-            auto guess = decoder.calculate_period({odf_buffer.linearize()});
+            auto guess = decoder.calculate_period(odf_buffer.linearize());
             tracker.set_period_guess(guess);
         }
 
         return tracker.new_estimate_expected();
     }
 
-    float_t estimate_tempo()
+    float_t
+    estimate_tempo()
     noexcept {
         float_t period = tracker.estimate_period();
 
@@ -78,17 +80,20 @@ public:
         return bpm;
     }
 
-    gsl::span<float_t const, odf_size> get_odf_buffer()
+    gsl::span<float_t const, odf_size>
+    get_odf_buffer()
     noexcept {
         return odf_buffer.linearize();
     }
 
-    gsl::span<float_t const, fft_magnitudes_size> get_fft_magnitudes()
+    gsl::span<float_t const, fft_magnitudes_size>
+    get_fft_magnitudes()
     const noexcept {
         return onset_detector.get_magnitudes();
     }
 
-    void clear()
+    void
+    clear()
     noexcept {
         counter = 0;
         std::fill(
@@ -103,8 +108,10 @@ private:
     Onset_detector<float_t, fft_window_size> onset_detector;
     Decoder<float_t, odf_size, decimate_by> decoder;
     Tracker<float_t, max_period, max_beats> tracker;
+
     Ring_array<float_t, odf_size> odf_buffer;
-    unsigned counter = 0;
+
     float_t const frames_per_minute;
+    int counter = 0;
 };
 }
