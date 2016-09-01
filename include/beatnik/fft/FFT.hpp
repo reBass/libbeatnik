@@ -134,8 +134,6 @@ private:
     butterfly_radix4(
         gsl::span<cpx_t, N_out> output
     ) const noexcept {
-        //auto const n = output.size() >> 2;
-
         std::array<std::complex<T>, 6> scratch;
         auto const negative_if_fwd = cpx_t{0, (Inverse ? 1.f : -1.f)};
 
@@ -146,7 +144,7 @@ private:
                          * get_twiddle<Inverse, Stride>(2*i);
             scratch[2] = output[i + 3*N_4]
                          * get_twiddle<Inverse, Stride>(3*i);
-            scratch[5] = output[i      ] - scratch[1];
+            scratch[5] = output[i] - scratch[1];
 
             output[i] += scratch[1];
             scratch[3] = scratch[0] + scratch[2];
@@ -154,7 +152,7 @@ private:
             scratch[4] = negative_if_fwd * scratch[4];
 
             output[i + 2*N_4] =  output[i] - scratch[3];
-            output[i      ] += scratch[3];
+            output[i        ] += scratch[3];
             output[i + 1*N_4] =  scratch[5] + scratch[4];
             output[i + 3*N_4] =  scratch[5] - scratch[4];
         }

@@ -79,7 +79,10 @@ private:
     void
     compute_fft()
     noexcept {
-        window.cut(input_buffer.cend() - N, windowed_buffer.begin());
+        window.cut(
+            std::cend(input_buffer) - N,
+            std::begin(windowed_buffer)
+        );
         fft.transform_forward(windowed_buffer, output);
     }
 
@@ -100,7 +103,7 @@ private:
     estimate_power_rise()
     noexcept {
         auto result = 0.000001f;
-        for (auto i = 0u; i < magnitudes_size; ++i) {
+        for (auto i = 0; i < magnitudes_size; ++i) {
             if (magnitudes[i] > previous_magnitudes[i] * 2) {
                 ++result;
             }

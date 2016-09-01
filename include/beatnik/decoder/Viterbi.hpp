@@ -59,6 +59,8 @@ private:
         auto psi_it = std::begin(psi);
         auto input_it = std::cbegin(input);
 
+        std::array<T, radius> temp;
+
         for (auto i = 0; i < 3 * radius; i++) {
             auto m = i % radius;
             if (i >= radius) {
@@ -77,7 +79,7 @@ private:
     const noexcept {
         T max_value = delta[0] * at(permutation, 0);
         int max_index = 0;
-        for (auto i = 0; i < N; i++) {
+        for (auto i = 0; i < N; ++i) {
             auto product = delta[i] * at(i, permutation);
             if (product > max_value) {
                 max_index = i;
@@ -87,7 +89,7 @@ private:
         return std::make_pair(max_index, max_value);
     }
 
-    T
+    constexpr T
     at(int i, int j)
     const noexcept {
         auto distance = math::abs_difference(i, j);
@@ -111,7 +113,6 @@ private:
     static constexpr T initial_delta = 1;
     static constexpr int radius = static_cast<int>(N/2);
     std::array<T, radius> cache;
-    std::array<T, radius> temp;
     std::array<T, N> delta;
     std::array<std::ptrdiff_t, N> psi;
 };

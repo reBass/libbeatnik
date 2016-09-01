@@ -20,17 +20,17 @@ public:
     }
 
     void
-    compute (gsl::span<T const, N> input, gsl::span<T, N> output)
+    compute(gsl::span<T const, N> input, gsl::span<T, N> output)
     noexcept {
-        std::fill(
-            std::end(time_domain) - N,
-            std::end(time_domain),
-            0
-        );
         std::copy(
             std::cbegin(input),
             std::cend(input),
             std::begin(time_domain)
+        );
+        std::fill(
+            std::end(time_domain) - N,
+            std::end(time_domain),
+            0
         );
 
         fft.transform_forward(time_domain, frequency_domain);
@@ -39,7 +39,7 @@ public:
             std::cbegin(frequency_domain),
             std::cend(frequency_domain),
             std::begin(frequency_domain),
-            [] (const auto& value) {
+            [] (auto const& value) {
                 return std::norm(value);
             }
         );
@@ -58,7 +58,7 @@ public:
     }
 
 private:
-    const Real_FFT<T, 2*N> fft;
+    Real_FFT<T, 2*N> const fft;
     std::array<std::complex<T>, N + 1> frequency_domain;
     std::array<T, 2*N> time_domain;
 };
