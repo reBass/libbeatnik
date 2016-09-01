@@ -24,6 +24,8 @@
 #include <type_traits>
 #include <gsl/span>
 
+#include "Ring_array.hpp"
+
 namespace reBass
 {
 /**
@@ -87,40 +89,47 @@ void threshold_reference(
     );
 }
 
-template <typename T, std::ptrdiff_t N_in, std::ptrdiff_t N_out>
+template <
+    std::ptrdiff_t Radius,
+    typename T,
+    std::ptrdiff_t N_in,
+    std::ptrdiff_t N_out
+>
 void
 adaptive_threshold(
     gsl::span<T const, N_in> in,
-    gsl::span<T, N_out> out,
-    std::ptrdiff_t radius
+    gsl::span<T, N_out> out
 ) noexcept {
     assert(std::size(in) == std::size(out));
     auto const n = std::size(in);
 
-    assert(n >= 2*radius);
+    assert(n >= 2*Radius);
     T sum = 0;
     std::ptrdiff_t count = 0;
+    Ring_array<T, Radius> temp;
 
-    for (auto i = 0; i < n + radius; ++i) {
+    for (auto i = 0; i < n + Radius; ++i) {
         if (i < n) {
             sum += in[i];
             ++count;
         }
-        if (i >= radius) {
-            out[i - radius] = std::fdim(in[i - radius], sum / count);
-            if (i > 2*radius) {
-                sum -= in[i - 2*radius];
+        if (i >= Radius) {
+            auto const in_value = in[i - Radius];
+            out[i - Radius] = std::fdim(in_value, sum / count);
+            if (i > 2*Radius) {
+                sum -= temp.front();
                 --count;
             }
+            temp.push_back(in_value);
         }
     }
 }
 
-template <typename T, std::ptrdiff_t N>
+template <std::ptrdiff_t Radius, typename T, std::ptrdiff_t N>
 void
-adaptive_threshold(gsl::span<T, N> data, std::ptrdiff_t radius)
+adaptive_threshold(gsl::span<T, N> data)
 noexcept {
-    adaptive_threshold<T, N>(data, data, radius);
+    adaptive_threshold<Radius, T, N>(data, data);
 }
 
 template <typename T, std::ptrdiff_t N_in, std::ptrdiff_t N_out>

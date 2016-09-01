@@ -36,19 +36,17 @@ public:
     int
     calculate_period(gsl::span<T const, window_size> input)
     noexcept {
-        math::adaptive_threshold(
+        math::adaptive_threshold<threshold_range>(
             input,
-            gsl::span<T, window_size>(odf_frame),
-            threshold_range
+            gsl::span<T, window_size>(odf_frame)
         );
         acf.compute(odf_frame);
         math::comb_filter(
             gsl::span<T const, window_size>(odf_frame),
             gsl::span<T, combed_size>(combed_frame)
         );
-        math::adaptive_threshold(
-            gsl::span<T, combed_size>(combed_frame),
-            threshold_range
+        math::adaptive_threshold<threshold_range>(
+            gsl::span<T, combed_size>(combed_frame)
         );
 
         // a periodicity at T implies a periodicity at 2*T,

@@ -84,10 +84,9 @@ static void BM_Adaptive_Threshold(benchmark::State& state) {
     std::array<float, 512> input;
 
     while(state.KeepRunning()) {
-        math::adaptive_threshold(
+        math::adaptive_threshold<7>(
             gsl::span<float const, 512>(input),
-            gsl::span<float, 512>(input),
-            7
+            gsl::span<float, 512>(input)
         );
     }
 }
