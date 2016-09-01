@@ -21,7 +21,8 @@
 #include <beatnik/fft/FFT.hpp>
 
 #include <benchmark/benchmark.h>
-#include "kiss_fft/kiss_fftr.h"
+#include <kiss_fft/kiss_fftr.h>
+#include <kiss_fft/kiss_fft.h>
 
 using namespace reBass;
 
