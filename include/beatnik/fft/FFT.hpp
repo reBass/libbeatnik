@@ -21,22 +21,24 @@
 #include <array>
 #include <complex>
 #include <utility>
+#include <type_traits>
 
 #include <gsl/span>
 
 namespace reBass {
-    template <typename T, unsigned N>
-    class FFT final
+    template <typename T, int N>
+    class FFT
     {
         using real_t = T;
         using cpx_t = std::complex<T>;
 
-        // only radix-2 and radix-4 butterflies implemented (for sake of simplicity)
+        // only radix-2 and radix-4 butterflies implemented
+        // (for sake of simplicity)
         static_assert((N & (N - 1)) == 0, "N must be a power of 2.");
     public:
         static constexpr auto const pi = real_t{3.141592653589793238462643L};
 
-        FFT ()
+        FFT()
         noexcept {
             auto const step = real_t{ -2 * pi / N };
             for (auto i = 0u; i <= N; ++i) {
@@ -44,9 +46,10 @@ namespace reBass {
             }
         }
 
-        void transform_forward(
-                gsl::span<cpx_t const, N> input,
-                gsl::span<cpx_t, N> output
+        void
+        transform_forward(
+            gsl::span<cpx_t const, N> input,
+            gsl::span<cpx_t, N> output
         ) const noexcept {
             step_into(
                 gsl::span<cpx_t const>(input.data(), N),
@@ -56,7 +59,8 @@ namespace reBass {
             );
         }
 
-        void transform_backward(
+        void
+        transform_backward(
             gsl::span<cpx_t const, N> input,
             gsl::span<cpx_t, N> output
         ) const noexcept {
@@ -69,11 +73,12 @@ namespace reBass {
         }
 
     private:
-        void step_into (
-                gsl::span<cpx_t const> input,
-                gsl::span<cpx_t> output,
-                bool inverse,
-                unsigned stride
+        void
+        step_into (
+            gsl::span<cpx_t const> input,
+            gsl::span<cpx_t> output,
+            bool inverse,
+            int stride
         ) const noexcept {
             auto const output_size = output.size();
             auto const radix = (output_size % 4 == 0) ? 4u : 2u;
@@ -86,7 +91,7 @@ namespace reBass {
             } else {
                 for (auto i = 0u; i < radix; ++i) {
                     step_into(
-                            input.subspan(i * stride),
+                            input.subspan(i * stride, gsl::dynamic_extent),
                             output.subspan(i * remainder, remainder),
                             inverse,
                             stride * radix
@@ -101,7 +106,8 @@ namespace reBass {
             }
         }
 
-        void butterfly_radix2(gsl::span<cpx_t> output, bool inverse, unsigned stride)
+        void
+        butterfly_radix2(gsl::span<cpx_t> output, bool inverse, int stride)
         const noexcept {
             auto const n = output.size() >> 1;
 
@@ -112,7 +118,8 @@ namespace reBass {
             }
         }
 
-        void butterfly_radix4(gsl::span<cpx_t> output, bool inverse, unsigned stride)
+        void
+        butterfly_radix4(gsl::span<cpx_t> output, bool inverse, int stride)
         const noexcept {
             auto const n = output.size() >> 2;
 
@@ -120,9 +127,12 @@ namespace reBass {
             auto const negative_if_fwd = cpx_t{0, (inverse ? 1.f : -1.f)};
 
             for (auto i = 0; i < n; ++i) {
-                scratch[0] = output[i + 1*n] * get_twiddle(1*i * stride, inverse);
-                scratch[1] = output[i + 2*n] * get_twiddle(2*i * stride, inverse);
-                scratch[2] = output[i + 3*n] * get_twiddle(3*i * stride, inverse);
+                scratch[0] = output[i + 1*n]
+                             * get_twiddle(1*i * stride, inverse);
+                scratch[1] = output[i + 2*n]
+                             * get_twiddle(2*i * stride, inverse);
+                scratch[2] = output[i + 3*n]
+                             * get_twiddle(3*i * stride, inverse);
                 scratch[5] = output[i      ] - scratch[1];
 
                 output[i] += scratch[1];
@@ -137,7 +147,8 @@ namespace reBass {
             }
         }
 
-        constexpr cpx_t const& get_twiddle(unsigned index, bool inverse)
+        constexpr cpx_t const&
+        get_twiddle(int index, bool inverse)
         const noexcept {
             return inverse ? twiddles[N - index] : twiddles[index];
         }
