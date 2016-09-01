@@ -23,18 +23,16 @@
 #include "../common/Element.hpp"
 
 namespace reBass {
-template <typename T, int MaxPeriod>
+template <typename T, int MinPeriod>
 class Skewed_window
 {
 public:
     Skewed_window()
     noexcept {
-        for (auto period = period_at(0); period <= MaxPeriod; ++period) {
+        for (auto period = min_period; period < max_period; ++period) {
             cache[index_of(period)].fill(0);
-            for (auto lag = max_lag_for(period);
-                 lag >= min_lag_for(period); --lag
-                ) {
-                cache[index_of(period)][lag - 1] = window_value(period, lag);
+            for (auto l = max_lag_at(period); l >= min_lag_at(period); --l) {
+                cache[index_of(period)][l - 1] = window_value(period, l);
             }
         }
     };
@@ -47,7 +45,7 @@ public:
         InputIt rlast
     ) const noexcept {
         int d = abs_distance(rfirst, rlast);
-        d = std::min(max_lag_for(MaxPeriod), d);
+        d = std::min(row_size, d);
         auto result = max_result(
             rfirst,
             rfirst + d,
@@ -58,23 +56,29 @@ public:
     };
 
 private:
+    static constexpr int min_period = MinPeriod;
+    static constexpr int max_period = 2*min_period;
+    static constexpr int period_range = max_period - min_period;
+    static constexpr int max_lag = 2 * max_period;
+    static constexpr int row_size = max_lag;
+
     static constexpr int 
     index_of(int period) {
-        return period - 1 - MaxPeriod / 2;
+        return period - min_period;
     };
 
     static constexpr int 
     period_at(int index) {
-        return index + 1 + MaxPeriod / 2;
+        return index + min_period;
     };
 
     static constexpr int 
-    max_lag_for(int period) {
+    max_lag_at (int period) {
         return period * 2;
     };
 
     static constexpr int 
-    min_lag_for(int period) {
+    min_lag_at (int period) {
         return period / 2;
     };
 
@@ -88,14 +92,14 @@ private:
     }
 
     static T 
-    window_value(int period, int lag) noexcept {
+    window_value(int period, int lag)
+    noexcept {
         auto x = static_cast<T>(lag) / static_cast<T>(period);
-
         return std::exp(-.5f * std::pow(TIGHTNESS * std::log(2 - x), 2.f));
     };
 
     static constexpr T TIGHTNESS = 5;
-    std::array<std::array<T, 2 * MaxPeriod>, MaxPeriod / 2> cache;
+    std::array<std::array<T, row_size>, period_range> cache;
 };
 
 }

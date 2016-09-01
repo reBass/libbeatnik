@@ -39,6 +39,7 @@ public:
     static constexpr int odf_step = ODFStep;
     static constexpr int decimate_by = 4;
     static constexpr int max_period = odf_size / decimate_by;
+    static constexpr int min_period = max_period / 2;
     static constexpr int max_beats = 16 * 512 / ODFSize;
     static constexpr float_t min_tempo = 90.f;
     static constexpr float_t max_tempo = 2*min_tempo;
@@ -59,7 +60,9 @@ public:
         if (++counter >= odf_step) {
             counter = 0;
             auto guess = decoder.calculate_period(odf_buffer.linearize());
-            tracker.set_period_guess(guess);
+            if (guess > 0) {
+                tracker.set_period_guess(guess);
+            }
         }
 
         return tracker.new_estimate_expected();
@@ -107,7 +110,7 @@ public:
 private:
     Onset_detector<float_t, fft_window_size> onset_detector;
     Decoder<float_t, odf_size, decimate_by> decoder;
-    Tracker<float_t, max_period, max_beats> tracker;
+    Tracker<float_t, min_period, max_beats> tracker;
 
     Ring_array<float_t, odf_size> odf_buffer;
 

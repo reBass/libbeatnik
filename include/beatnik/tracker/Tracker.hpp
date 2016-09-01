@@ -28,17 +28,21 @@
 #include "Skewed_window.hpp"
 
 namespace reBass {
-template <typename T, int MaxPeriod, int BeatsCount = 8>
+template <typename T, int MinPeriod, int BeatsCount = 8>
 class Tracker
 {
 public:
+    static constexpr int min_period = MinPeriod;
+    static constexpr int max_period = 2*min_period;
+    static constexpr int beats_count = BeatsCount;
+
     void set_period_guess(int period)
     noexcept {
         assert(is_valid_period(period));
         period_guess = period;
     }
 
-    bool update_score (T odf_value)
+    bool update_score(T odf_value)
     noexcept {
         if (!is_valid_period(period_guess)) {
             return false;
@@ -50,11 +54,11 @@ public:
                 cumulative_score.rend()
             );
 
-        auto new_score = (1 - ALPHA) * odf_value + ALPHA * last_score.value;
+        auto new_score = (1 - alpha) * odf_value + alpha * last_score.value;
         cumulative_score.push_back(new_score);
-        backlink.push_back(static_cast<unsigned>(last_score.index));
+        backlink.push_back(static_cast<int>(last_score.index));
 
-        counter++;
+        ++counter;
 
         return new_estimate_expected();
     }
@@ -108,19 +112,19 @@ public:
 
 private:
     static constexpr bool
-    is_valid_period (int period)
+    is_valid_period(int period)
     noexcept {
-        return period > MaxPeriod / 2
-               && period <= MaxPeriod;
+        return period >= min_period
+               && period < max_period;
     }
 
-    static constexpr float ALPHA = 0.9f;
-    static constexpr int N = MaxPeriod * BeatsCount;
+    static constexpr float alpha = 0.9f;
+    static constexpr int N = min_period * beats_count;
 
     int period_guess;
     int counter;
     Ring_array<T, N> cumulative_score;
     Ring_array<int, N> backlink;
-    Skewed_window<T, MaxPeriod> window;
+    Skewed_window<T, min_period> window;
 };
 }
