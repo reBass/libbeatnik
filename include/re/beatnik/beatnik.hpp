@@ -65,10 +65,9 @@ public:
 
         if (++counter >= odf_step) {
             counter = 0;
-            auto guess = decoder.calculate_period(odf_buffer.linearize());
-            if (guess > 0) {
-                tracker.set_period_guess(guess);
-            }
+            tracker.set_period_guess(
+                decoder.calculate_period(odf_buffer.linearize())
+            );
         }
 
         return tracker.new_estimate_expected();
