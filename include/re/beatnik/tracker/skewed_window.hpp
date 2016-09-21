@@ -29,8 +29,8 @@ template <typename T, int_t MinPeriod>
 class skewed_window
 {
 public:
-    skewed_window()
-    noexcept {
+    skewed_window() noexcept
+    {
         for (auto period = min_period; period < max_period; ++period) {
             cache[index_of(period)].fill(0);
             for (auto l = max_lag_at(period); l >= min_lag_at(period); --l) {
@@ -41,11 +41,8 @@ public:
 
     template <typename InputIt>
     math::element<T>
-    find_max_score(
-        int_t period,
-        InputIt rfirst,
-        InputIt rlast
-    ) const noexcept {
+    find_max_score(int_t period, InputIt rfirst, InputIt rlast) const noexcept
+    {
         auto d = static_cast<int_t>(std::distance(rfirst, rlast));
         d = std::min(max_lag_at(max_period), d);
         auto result = math::max_result(
@@ -85,8 +82,8 @@ private:
     };
 
     static T 
-    window_value(int_t period, int_t lag)
-    noexcept {
+    window_value(int_t period, int_t lag) noexcept
+    {
         auto x = static_cast<T>(lag) / static_cast<T>(period);
         return std::exp(-.5f * std::pow(TIGHTNESS * std::log(2 - x), 2.f));
     };

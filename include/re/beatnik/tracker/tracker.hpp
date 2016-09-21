@@ -40,16 +40,14 @@ public:
     static constexpr int_t beats_count = BeatsCount;
 
     void
-    set_period_guess(int_t period)
-    noexcept
+    set_period_guess(int_t period) noexcept
     {
         assert(is_valid_period(period));
         period_guess = period;
     }
 
     bool
-    update_score(T odf_value)
-    noexcept
+    update_score(T odf_value) noexcept
     {
         if (!is_valid_period(period_guess)) {
             return false;
@@ -64,7 +62,7 @@ public:
         auto new_score = (1 - alpha) * odf_value + alpha * last_score.value;
         cumulative_score.push_back(new_score);
         // a distance from the last beat
-        backlink.push_back(static_cast<int>(last_score.index));
+        backlink.push_back(static_cast<int_t>(last_score.index));
 
         ++counter;
 
@@ -72,16 +70,14 @@ public:
     }
 
     bool
-    new_estimate_expected()
-    noexcept
+    new_estimate_expected() noexcept
     {
         return is_valid_period(period_guess)
                && counter > period_guess;
     }
 
     T
-    estimate_period()
-    noexcept
+    estimate_period() noexcept
     {
         counter = 0;
 
@@ -111,8 +107,7 @@ public:
     };
 
     void
-    clear()
-    noexcept
+    clear() noexcept
     {
         period_guess = 0;
         counter = 0;
@@ -122,8 +117,7 @@ public:
 
 private:
     static constexpr bool
-    is_valid_period(int_t period)
-    noexcept
+    is_valid_period(int_t period) noexcept
     {
         return period >= min_period
                && period < max_period;

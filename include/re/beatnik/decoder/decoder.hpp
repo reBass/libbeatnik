@@ -32,15 +32,14 @@
 namespace re {
 namespace beatnik {
 
-template <typename T, int WindowSize, int DecimationFactor = 4>
+template <typename T, int_t WindowSize, int_t DecimationFactor = 4>
 class decoder
 {
 public:
-    static constexpr int window_size = WindowSize;
+    static constexpr int_t window_size = WindowSize;
 
-    int
-    calculate_period(gsl::span<T const, window_size> input)
-    noexcept
+    int_t
+    calculate_period(gsl::span<T const, window_size> input) noexcept
     {
         std::array<T, window_size> odf_frame;
 
@@ -79,12 +78,12 @@ public:
     }
 
 private:
-    static constexpr int combed_size = WindowSize / DecimationFactor;
-    static constexpr int viterbi_size = combed_size / 2;
-    static constexpr int viterbi_offset = combed_size - viterbi_size;
-    static constexpr int max_period = combed_size;
-    static constexpr int min_period = max_period - viterbi_size;
-    static constexpr int threshold_range = 7;
+    static constexpr int_t combed_size = WindowSize / DecimationFactor;
+    static constexpr int_t viterbi_size = combed_size / 2;
+    static constexpr int_t viterbi_offset = combed_size - viterbi_size;
+    static constexpr int_t max_period = combed_size;
+    static constexpr int_t min_period = max_period - viterbi_size;
+    static constexpr int_t threshold_range = 7;
 
     fft::acf<T, window_size> acf;
     viterbi<T, viterbi_size> viterbi;

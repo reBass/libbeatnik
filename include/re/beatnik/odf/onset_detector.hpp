@@ -45,8 +45,7 @@ public:
     /// a scalar value representing the likelihood of an onset
     template <int_t N_in>
     T
-    process(gsl::span<T const, N_in> input)
-    noexcept
+    process(gsl::span<T const, N_in> input) noexcept
     {
         input_buffer.append(input);
         compute_fft();
@@ -55,23 +54,20 @@ public:
     }
 
     gsl::span<std::complex<T> const, fft_output_size>
-    get_fft_output()
-    const noexcept
+    get_fft_output() const noexcept
     {
         return output;
     }
 
     gsl::span<T const, magnitudes_size>
-    get_magnitudes()
-    const noexcept
+    get_magnitudes() const noexcept
     {
         return magnitudes;
     }
 
 private:
     void
-    compute_fft()
-    noexcept
+    compute_fft() noexcept
     {
         std::array<T, window_size> windowed_buffer;
         window.cut(input_buffer.linearize(), windowed_buffer);
@@ -79,8 +75,7 @@ private:
     }
 
     void
-    compute_magnitudes()
-    noexcept
+    compute_magnitudes() noexcept
     {
         std::transform(
             std::cbegin(output),
@@ -93,10 +88,9 @@ private:
     }
 
     T
-    estimate_power_rise()
-    noexcept
+    estimate_power_rise() noexcept
     {
-        auto result = 0.000001f;
+        auto result = 0.000001f; // avoid zero values
         for (auto i = 0; i < magnitudes_size; ++i) {
             if (magnitudes[i] > previous_magnitudes[i] * 2) {
                 ++result;

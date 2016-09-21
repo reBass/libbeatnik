@@ -16,13 +16,17 @@
 #include <array>
 #include <complex>
 
-#include <beatnik/common/math.hpp>
-#include <beatnik/decoder/decoder.hpp>
+#include <gsl/span>
+
+#include <re/lib/math/adaptive_threshold.hpp>
+#include <re/beatnik/decoder/decoder.hpp>
 
 #include <benchmark/benchmark.h>
 
 
-using namespace reBass;
+using namespace re;
+using namespace re::beatnik;
+using namespace re::math;
 
 static void BM_Adaptive_Threshold(benchmark::State& state) {
     std::array<float, 512> input;

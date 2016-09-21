@@ -35,16 +35,14 @@ template <typename T, int_t N>
 class viterbi
 {
 public:
-    viterbi()
-    noexcept
+    viterbi() noexcept
     {
         delta.fill(1);
         encache();
     }
 
     int
-    decode(gsl::span<T const, N> input)
-    noexcept
+    decode(gsl::span<T const, N> input) noexcept
     {
         calculate_transition(input);
         math::normalize(gsl::span<T, N>(delta));
@@ -59,8 +57,7 @@ public:
 
 private:
     void
-    calculate_transition(gsl::span<T const, N> input)
-    noexcept
+    calculate_transition(gsl::span<T const, N> input) noexcept
     {
         auto delta_it = std::begin(delta);
         auto psi_it = std::begin(psi);
@@ -81,9 +78,8 @@ private:
         }
     }
 
-    std::pair<int, T>
-    max_delta_element(int permutation)
-    const noexcept
+    std::pair<int_t, T>
+    max_delta_element(int_t permutation) const noexcept
     {
         T max_value = delta[0] * at(permutation, 0);
         int max_index = 0;
@@ -98,8 +94,7 @@ private:
     }
 
     constexpr T
-    at(int i, int j)
-    const noexcept
+    at(int_t i, int_t j) const noexcept
     {
         auto distance = abs_difference(i, j);
         if (distance >= radius) {
@@ -109,8 +104,7 @@ private:
     }
 
     void
-    encache()
-    noexcept
+    encache() noexcept
     {
         auto sigma_squared = powf(radius / 4.f, 2.f);
 
@@ -120,7 +114,7 @@ private:
         }
     }
 
-    static constexpr int radius = static_cast<int>(N / 2);
+    static constexpr int_t radius = N/2;
     std::array<T, radius> cache;
     std::array<T, N> delta;
     std::array<int_t, N> psi;
