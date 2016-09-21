@@ -17,69 +17,12 @@
 #include <complex>
 
 #include <beatnik/common/math.hpp>
-#include <beatnik/decoder/Decoder.hpp>
-#include <beatnik/fft/FFT.hpp>
+#include <beatnik/decoder/decoder.hpp>
 
 #include <benchmark/benchmark.h>
-#include <kiss_fft/kiss_fftr.h>
-#include <kiss_fft/kiss_fft.h>
+
 
 using namespace reBass;
-
-static void BM_FFT_float_512real(benchmark::State& state) {
-    std::array<float, 512> input;
-    input.fill(0);
-    input[1] = 1;
-
-    std::array<std::complex<float>, 257> output;
-    Real_FFT<float, 512> fft;
-
-    while (state.KeepRunning()) {
-        fft.transform_forward({input}, {output});
-    }
-}
-BENCHMARK(BM_FFT_float_512real);
-
-static void BM_FFT_float_512cpx(benchmark::State& state) {
-    std::array<std::complex<float>, 512> input;
-    input.fill(0);
-    input[1] = 1;
-
-    std::array<std::complex<float>, 512> output;
-    FFT<float, 512> fft;
-
-    while (state.KeepRunning()) {
-        fft.transform_forward(input, output);
-        fft.transform_backward(output, input);
-        input[1] = 1;
-    }
-}
-BENCHMARK(BM_FFT_float_512cpx);
-
-static void BM_Kiss_FFT_float_512cpx(benchmark::State& state) {
-    std::array<std::complex<float>, 512> input;
-    input.fill(0);
-    input[1] = 1;
-
-    std::array<std::complex<float>, 512> output;
-    auto plan = kiss_fft_alloc(512, false, nullptr, nullptr);
-    auto inv_plan = kiss_fft_alloc(512, true, nullptr, nullptr);
-
-    while (state.KeepRunning()) {
-        kiss_fft(
-            plan,
-            reinterpret_cast<kiss_fft_cpx const*>(input.data()),
-            reinterpret_cast<kiss_fft_cpx*>(output.data())
-        );
-        kiss_fft(
-            inv_plan,
-            reinterpret_cast<kiss_fft_cpx const*>(output.data()),
-            reinterpret_cast<kiss_fft_cpx*>(input.data())
-        );
-        input[1] = 1;
-    }
-}
-BENCHMARK(BM_Kiss_FFT_float_512cpx);
 
 static void BM_Adaptive_Threshold(benchmark::State& state) {
     std::array<float, 512> input;
@@ -108,20 +51,6 @@ static void BM_Threshold_Reference(benchmark::State& state) {
 }
 BENCHMARK(BM_Threshold_Reference);
 
-/*
-static void BM_Decoder(benchmark::State& state) {
-    Decoder<float> tracker;
-    for (auto i = 0u; i < 512; i++) {
-        tracker.process_sample(sin(static_cast<float>(i) / 256 * 3.1415f));
-    }
-    unsigned period = 0;
-    while (state.KeepRunning()) {
-        period = tracker.calculate_period();
-        tracker.process_sample(static_cast<float>(period) / 256.f);
-    }
-}
-BENCHMARK(BM_Decoder);
- */
 
 static void BM_Mean(benchmark::State& state) {
     std::array<float, 512> input;

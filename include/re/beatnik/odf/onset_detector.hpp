@@ -21,27 +21,33 @@
 #include <array>
 #include <complex>
 #include <limits>
+#include <type_traits>
 #include <gsl/span>
 
-#include "../common/Ring_array.hpp"
-#include "../fft/Hann_window.hpp"
-#include "../fft/Real_FFT.hpp"
+#include <re/lib/common.hpp>
+#include <re/lib/container/ring_array.hpp>
+#include <re/lib/fft/real_fft.hpp>
+#include <re/lib/fft/hann_window.hpp>
 
-namespace reBass {
-template <typename T, int N>
-class Onset_detector
+namespace re {
+namespace beatnik {
+
+template <typename T, int_t N>
+class onset_detector
 {
+    static_assert(std::is_floating_point<T>::value);
 public:
-    static constexpr int fft_window_size = N;
-    static constexpr int fft_output_size = N/2 + 1;
-    static constexpr int magnitudes_size = N/2;
+    static constexpr int_t window_size = N;
+    static constexpr int_t fft_output_size = N / 2 + 1;
+    static constexpr int_t magnitudes_size = N / 2;
 
     /// Appends chunk of incomming audio to an internal buffer and assings it
     /// a scalar value representing the likelihood of an onset
-    template <std::ptrdiff_t N_in>
+    template <int_t N_in>
     T
     process(gsl::span<T const, N_in> input)
-    noexcept {
+    noexcept
+    {
         input_buffer.append(input);
         compute_fft();
         compute_magnitudes();
@@ -50,50 +56,37 @@ public:
 
     gsl::span<std::complex<T> const, fft_output_size>
     get_fft_output()
-    const noexcept {
+    const noexcept
+    {
         return output;
     }
 
     gsl::span<T const, magnitudes_size>
     get_magnitudes()
-    const noexcept {
+    const noexcept
+    {
         return magnitudes;
     }
 
 private:
     void
-    append_short(gsl::span<short const> input)
-    noexcept {
-        std::transform(
-            std::cbegin(input),
-            std::cend(input),
-            std::back_inserter(input_buffer),
-            [] (short sample) {
-                return
-                    static_cast<T>(sample)
-                    / static_cast<T>(std::numeric_limits<short>::max());
-            }
-        );
-    }
-
-    void
     compute_fft()
-    noexcept {
-        window.cut(
-            std::cend(input_buffer) - N,
-            std::begin(windowed_buffer)
-        );
-        fft.transform_forward(windowed_buffer, output);
+    noexcept
+    {
+        std::array<T, window_size> windowed_buffer;
+        window.cut(input_buffer.linearize(), windowed_buffer);
+        fft(windowed_buffer, output);
     }
 
     void
     compute_magnitudes()
-    noexcept {
+    noexcept
+    {
         std::transform(
             std::cbegin(output),
             std::cend(output) - 1,
             std::begin(magnitudes),
-            [this] (const auto value) {
+            [](auto const value) {
                 return abs(value * norm_factor());
             }
         );
@@ -101,7 +94,8 @@ private:
 
     T
     estimate_power_rise()
-    noexcept {
+    noexcept
+    {
         auto result = 0.000001f;
         for (auto i = 0; i < magnitudes_size; ++i) {
             if (magnitudes[i] > previous_magnitudes[i] * 2) {
@@ -112,18 +106,21 @@ private:
         return result / magnitudes_size;
     }
 
-    constexpr T
-    norm_factor() {
-        return T{1} / (N * window.norm_correction());
+    static constexpr T
+    norm_factor()
+    {
+        return 1.f
+               / (N * fft::hann_window<T, window_size>::norm_correction());
     }
 
-    const Real_FFT<T, fft_window_size> fft;
-    const Hann_window<T, fft_window_size> window;
-    std::array<T, fft_window_size> windowed_buffer;
-    Ring_array<T, fft_window_size> input_buffer;
+    fft::real_fft<T, window_size, fft::direction::forward> const fft;
+    fft::hann_window <T, window_size> const window;
+    ring_array<T, window_size> input_buffer;
 
     std::array<std::complex<T>, fft_output_size> output;
     std::array<T, magnitudes_size> previous_magnitudes;
     std::array<T, magnitudes_size> magnitudes;
 };
+
+}
 }

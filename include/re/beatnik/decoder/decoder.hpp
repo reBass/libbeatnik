@@ -21,30 +21,46 @@
 #include <functional>
 #include <gsl/span>
 
-#include "../common/math.hpp"
-#include "../common/Ring_array.hpp"
-#include "../fft/ACF.hpp"
-#include "Viterbi.hpp"
+#include <re/lib/container/ring_array.hpp>
+#include <re/lib/fft/acf.hpp>
+#include <re/lib/math/adaptive_threshold.hpp>
+#include <re/lib/math/comb_filter.hpp>
+#include <re/lib/math/normalize.hpp>
 
-namespace reBass {
-template <typename T = float, int WindowSize = 512, int DecimationFactor = 4>
-class Decoder
+#include <re/beatnik/decoder/viterbi.hpp>
+
+namespace re {
+namespace beatnik {
+
+template <typename T, int WindowSize, int DecimationFactor = 4>
+class decoder
 {
 public:
     static constexpr int window_size = WindowSize;
 
     int
     calculate_period(gsl::span<T const, window_size> input)
-    noexcept {
+    noexcept
+    {
+        std::array<T, window_size> odf_frame;
+
+        // subtract the baseline
         math::adaptive_threshold<threshold_range>(
             input,
             gsl::span<T, window_size>(odf_frame)
         );
-        acf.compute(odf_frame);
+        // calculate autocorrelation function -
+        // - find the likelihood of periodicity
+        acf(odf_frame);
+
+        std::array<T, combed_size> combed_frame;
+        // "echo" the acf at 1/4, 2/4 and 3/4 of the frame size
+        // - effective downsampling retaining the resolution
         math::comb_filter(
             gsl::span<T const, window_size>(odf_frame),
             gsl::span<T, combed_size>(combed_frame)
         );
+        // look for peaks
         math::adaptive_threshold<threshold_range>(
             gsl::span<T, combed_size>(combed_frame)
         );
@@ -55,10 +71,13 @@ public:
             combed_frame.data() + viterbi_offset,
             viterbi_size
         );
+        // make a transition from a previous frame to the current one
+        // and find the maximum
         auto const period_offset = viterbi.decode(viterbi_input);
 
         return period_offset + min_period;
     }
+
 private:
     static constexpr int combed_size = WindowSize / DecimationFactor;
     static constexpr int viterbi_size = combed_size / 2;
@@ -67,10 +86,9 @@ private:
     static constexpr int min_period = max_period - viterbi_size;
     static constexpr int threshold_range = 7;
 
-    std::array<T, window_size> odf_frame;
-    std::array<T, combed_size> combed_frame;
-
-    ACF<T, window_size> acf;
-    Viterbi<T, viterbi_size> viterbi;
+    fft::acf<T, window_size> acf;
+    viterbi<T, viterbi_size> viterbi;
 };
+
+}
 }

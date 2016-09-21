@@ -24,37 +24,44 @@
 
 #include <gsl/span>
 
-#include "../common/math.hpp"
-#include "../common/Element.hpp"
+#include <re/lib/common.hpp>
+#include <re/lib/math/element.hpp>
+#include <re/lib/math/normalize.hpp>
 
-namespace reBass {
-template <typename T, std::ptrdiff_t N>
-class Viterbi
+namespace re {
+namespace beatnik {
+
+template <typename T, int_t N>
+class viterbi
 {
 public:
-    Viterbi()
-    noexcept {
-        delta.fill(initial_delta);
+    viterbi()
+    noexcept
+    {
+        delta.fill(1);
         encache();
     }
 
     int
     decode(gsl::span<T const, N> input)
-    noexcept {
+    noexcept
+    {
         calculate_transition(input);
         math::normalize(gsl::span<T, N>(delta));
 
         return psi[
-            Element<T>::max(
+            math::element<T>::max(
                 std::cbegin(delta),
                 std::cend(delta)
             ).index
         ];
     }
+
 private:
     void
-    calculate_transition (gsl::span<T const, N> input)
-    noexcept {
+    calculate_transition(gsl::span<T const, N> input)
+    noexcept
+    {
         auto delta_it = std::begin(delta);
         auto psi_it = std::begin(psi);
         auto input_it = std::cbegin(input);
@@ -76,7 +83,8 @@ private:
 
     std::pair<int, T>
     max_delta_element(int permutation)
-    const noexcept {
+    const noexcept
+    {
         T max_value = delta[0] * at(permutation, 0);
         int max_index = 0;
         for (auto i = 0; i < N; ++i) {
@@ -91,8 +99,9 @@ private:
 
     constexpr T
     at(int i, int j)
-    const noexcept {
-        auto distance = math::abs_difference(i, j);
+    const noexcept
+    {
+        auto distance = abs_difference(i, j);
         if (distance >= radius) {
             return 0.f;
         }
@@ -101,7 +110,8 @@ private:
 
     void
     encache()
-    noexcept {
+    noexcept
+    {
         auto sigma_squared = powf(radius / 4.f, 2.f);
 
         for (auto i = 0u; i < radius; i++) {
@@ -110,11 +120,12 @@ private:
         }
     }
 
-    static constexpr T initial_delta = 1;
-    static constexpr int radius = static_cast<int>(N/2);
+    static constexpr int radius = static_cast<int>(N / 2);
     std::array<T, radius> cache;
     std::array<T, N> delta;
-    std::array<std::ptrdiff_t, N> psi;
+    std::array<int_t, N> psi;
 };
+
+}
 }
 

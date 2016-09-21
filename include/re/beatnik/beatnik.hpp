@@ -17,11 +17,15 @@
 
 #include <gsl/span>
 
-#include "odf/Onset_detector.hpp"
-#include "decoder/Decoder.hpp"
-#include "tracker/Tracker.hpp"
+#include <re/lib/container/ring_array.hpp>
 
-namespace reBass {
+#include <re/beatnik/odf/onset_detector.hpp>
+#include <re/beatnik/decoder/decoder.hpp>
+#include <re/beatnik/tracker/tracker.hpp>
+
+namespace re {
+namespace beatnik {
+
 template <
     typename T = float,
     int FFTSize = 1024,
@@ -29,7 +33,8 @@ template <
     int ODFSize = 2048,
     int ODFStep = 128
 >
-class Beatnik {
+class beatnik
+{
 public:
     using float_t = T;
     static constexpr int fft_window_size = FFTSize;
@@ -42,9 +47,9 @@ public:
     static constexpr int min_period = max_period / 2;
     static constexpr int max_beats = 16 * 512 / ODFSize;
     static constexpr float_t min_tempo = 90.f;
-    static constexpr float_t max_tempo = 2*min_tempo;
+    static constexpr float_t max_tempo = 2 * min_tempo;
 
-    Beatnik(float_t sample_rate)
+    beatnik(float_t sample_rate)
     noexcept:
         frames_per_minute(60.f * sample_rate / fft_step)
     {
@@ -52,7 +57,8 @@ public:
 
     bool
     process(gsl::span<float_t const, fft_step> audio)
-    noexcept {
+    noexcept
+    {
         float_t sample = onset_detector.process(audio);
         odf_buffer.push_back(sample);
         tracker.update_score(sample);
@@ -70,13 +76,15 @@ public:
 
     float_t
     estimate_tempo()
-    noexcept {
+    noexcept
+    {
         float_t period = tracker.estimate_period();
 
         auto bpm = frames_per_minute / period;
         while (bpm > max_tempo) {
             bpm /= 2;
-        } while (bpm < min_tempo) {
+        }
+        while (bpm < min_tempo) {
             bpm *= 2;
         }
 
@@ -85,36 +93,41 @@ public:
 
     gsl::span<float_t const, odf_size>
     get_odf_buffer()
-    noexcept {
+    noexcept
+    {
         return odf_buffer.linearize();
     }
 
     gsl::span<float_t const, fft_magnitudes_size>
     get_fft_magnitudes()
-    const noexcept {
+    const noexcept
+    {
         return onset_detector.get_magnitudes();
     }
 
     void
     clear()
-    noexcept {
+    noexcept
+    {
         counter = 0;
         std::fill(
-                std::begin(odf_buffer),
-                std::end(odf_buffer),
-                static_cast<T>(0.1)
+            std::begin(odf_buffer),
+            std::end(odf_buffer),
+            static_cast<T>(0.1)
         );
         tracker.clear();
     }
 
 private:
-    Onset_detector<float_t, fft_window_size> onset_detector;
-    Decoder<float_t, odf_size, decimate_by> decoder;
-    Tracker<float_t, min_period, max_beats> tracker;
+    onset_detector<float_t, fft_window_size> onset_detector;
+    decoder<float_t, odf_size, decimate_by> decoder;
+    tracker<float_t, min_period, max_beats> tracker;
 
-    Ring_array<float_t, odf_size> odf_buffer;
+    ring_array <float_t, odf_size> odf_buffer;
 
     float_t const frames_per_minute;
     int counter = 0;
 };
+
+}
 }
