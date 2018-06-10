@@ -70,7 +70,7 @@ private:
     compute_fft() noexcept
     {
         std::array<T, window_size> windowed_buffer;
-        window.cut(input_buffer.linearize(), windowed_buffer);
+        window.cut(input_buffer.linearize().cbegin(), windowed_buffer.begin());
         fft(windowed_buffer, output);
     }
 

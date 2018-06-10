@@ -16,23 +16,15 @@
 #include <array>
 #include <complex>
 
-#include <gsl/span>
-
-#include <re/lib/math/adaptive_threshold.hpp>
 #include <re/beatnik/decoder/decoder.hpp>
 
 #include <benchmark/benchmark.h>
-
-
-using namespace re;
-using namespace re::beatnik;
-using namespace re::math;
 
 static void BM_Adaptive_Threshold(benchmark::State& state) {
     std::array<float, 512> input;
 
     while(state.KeepRunning()) {
-        math::adaptive_threshold<7>(
+        re::math::adaptive_threshold<7>(
             gsl::span<float const, 512>(input),
             gsl::span<float, 512>(input)
         );
@@ -45,7 +37,7 @@ static void BM_Threshold_Reference(benchmark::State& state) {
     std::array<float, 512> thresh;
 
     while(state.KeepRunning()) {
-        math::threshold_reference(
+        re::math::threshold_reference(
             gsl::span<float const, 512>(input),
             gsl::span<float, 512>(input),
             gsl::span<float, 512>(thresh),
@@ -60,7 +52,7 @@ static void BM_Mean(benchmark::State& state) {
     std::array<float, 512> input;
     input.fill(1);
     while (state.KeepRunning()) {
-        input[0] = math::mean(gsl::span<float const>{input});
+        input[0] = re::math::mean(gsl::span<float const>{input});
     }
 }
 BENCHMARK(BM_Mean);
@@ -69,7 +61,7 @@ static void BM_Normalize(benchmark::State& state) {
     std::array<float, 256> input;
     input.fill(1);
     while (state.KeepRunning()) {
-        math::normalize(gsl::span<float const>{input}, gsl::span<float>{input});
+        re::math::normalize(gsl::span<float const>{input}, gsl::span<float>{input});
     }
 }
 BENCHMARK(BM_Normalize);
@@ -79,7 +71,7 @@ static void BM_Comb_filter(benchmark::State& state) {
     std::array<float, 128> output;
     input.fill(1);
     while (state.KeepRunning()) {
-        math::comb_filter(
+        re::math::comb_filter(
             gsl::span<float const, 512>{input},
             gsl::span<float, 128>{output}
         );
