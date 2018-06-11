@@ -57,24 +57,24 @@ public:
     bool
     process(gsl::span<float_t const, fft_step> audio) noexcept
     {
-        float_t sample = onset_detector.process(audio);
+        float_t sample = onset_detector_.process(audio);
         odf_buffer.push_back(sample);
-        tracker.update_score(sample);
+        tracker_.update_score(sample);
 
         if (++counter >= odf_step) {
             counter = 0;
-            tracker.set_period_guess(
-                decoder.calculate_period(odf_buffer.linearize())
+            tracker_.set_period_guess(
+                decoder_.calculate_period(odf_buffer.linearize())
             );
         }
 
-        return tracker.new_estimate_expected();
+        return tracker_.new_estimate_expected();
     }
 
     float_t
     estimate_tempo() noexcept
     {
-        float_t period = tracker.estimate_period();
+        float_t period = tracker_.estimate_period();
 
         auto bpm = frames_per_minute / period;
         while (bpm > max_tempo) {
@@ -96,7 +96,7 @@ public:
     gsl::span<float_t const, fft_magnitudes_size>
     get_fft_magnitudes() const noexcept
     {
-        return onset_detector.get_magnitudes();
+        return onset_detector_.get_magnitudes();
     }
 
     void
@@ -108,15 +108,15 @@ public:
             std::end(odf_buffer),
             static_cast<T>(0.1)
         );
-        tracker.clear();
+        tracker_.clear();
     }
 
 private:
-    onset_detector<float_t, fft_window_size> onset_detector;
-    decoder<float_t, odf_size, decimate_by> decoder;
-    tracker<float_t, min_period, max_beats> tracker;
+    onset_detector<float_t, fft_window_size> onset_detector_;
+    decoder<float_t, odf_size, decimate_by> decoder_;
+    tracker<float_t, min_period, max_beats> tracker_;
 
-    ring_array <float_t, odf_size> odf_buffer;
+    ring_array<float_t, odf_size> odf_buffer;
 
     float_t const frames_per_minute;
     int_t counter = 0;

@@ -72,7 +72,7 @@ public:
         );
         // make a transition from a previous frame to the current one
         // and find the maximum
-        auto const period_offset = viterbi.decode(viterbi_input);
+        auto const period_offset = viterbi_.decode(viterbi_input);
 
         return period_offset + min_period;
     }
@@ -86,7 +86,7 @@ private:
     static constexpr int_t threshold_range = 7;
 
     fft::acf<T, window_size> acf;
-    viterbi<T, viterbi_size> viterbi;
+    viterbi<T, viterbi_size> viterbi_;
 };
 
 }
