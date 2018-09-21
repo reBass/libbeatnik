@@ -5,3 +5,6 @@ add_executable(libbeatnik_bench
 )
 target_link_libraries(libbeatnik_bench ${PROJECT_NAME})
 target_link_libraries(libbeatnik_bench benchmark)
+
+add_executable(file file.cpp)
+target_link_libraries(file ${PROJECT_NAME})
